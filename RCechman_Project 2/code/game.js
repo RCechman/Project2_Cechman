@@ -2,7 +2,6 @@
 var actorChars = {
   "@": Player,
   "o": Coin, // A coin will wobble up and down
-  "!": Fire, // still obstacle
   "v": Bird // moving obstacle
 
 };
