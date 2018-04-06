@@ -2,8 +2,8 @@
 var actorChars = {
   "@": Player,
   "o": Coin, // A coin will wobble up and down
-  "v": Bird // moving obstacle
-
+  "v": Bird, ">": Bird, // moving obstacle
+  "*": Snowflake
 };
 
 function Level(plan) {
@@ -90,11 +90,24 @@ function Coin(pos) {
 }
 Coin.prototype.type = "coin";
 
-// added moving bird
-function Bird(pos) {
+function Snowflake(pos) {
   this.basePos = this.pos = pos.plus(new Vector(0.2, 0.1));
+  this.size = new Vector (1,1);
+  this.wobble = Math.random() * Math.PI * 2;
+}
+Snowflake.prototype.type = "snowflake";
+// added moving bird
+function Bird(pos, ch) {
+  this.pos = pos;
   this.size = new Vector(1, 1);
-  this.speed = new Vector(2, 0);
+  if (ch == ">") {
+    // Horizontal lava
+    this.speed = new Vector(5, 0);
+  }
+  else if (ch == "v") {
+    // Drip lava. Repeat back to this pos.
+    this.speed = new Vector(0, 3);
+  }
 }
 Bird.prototype.type = "bird";
 // Lava is initialized based on the character, but otherwise has a
@@ -296,7 +309,16 @@ Bird.prototype.act = function(step, level) {
   else
     this.speed = this.speed.times(-1);
 };
+//Snowflake wobble
+var maxStep = 0.05;
 
+var wobSpeed = 5, wobDist = 0.07; //changed
+
+Snowflake.prototype.act = function(step) {
+  this.wobble += step * wobSpeed;
+  var wobPost = Math.sin(this.wobble) * wobDist;
+  this.pos = this.basePos.plus(new Vector(0, wobPost)); //changed
+};
 
 var maxStep = 0.05;
 
@@ -368,9 +390,11 @@ Player.prototype.act = function(step, level, keys) {
 };
 
 Level.prototype.playerTouched = function(type, actor) {
-
+var level = this;
   // if the player touches lava and the player hasn't won
   // Player loses
+var stopBird = (this.speed = new Vector (5,0)); //added
+
   if (type == "fire" && this.status == null) { //changed
     this.status = "lost";
     this.finishDelay = 1;
@@ -383,6 +407,7 @@ Level.prototype.playerTouched = function(type, actor) {
     this.actors = this.actors.filter(function(other) {
       return other != actor;
     });
+
     // If there aren't any coins left, player wins
     if (!this.actors.some(function(actor) {
            return actor.type == "coin";
@@ -391,6 +416,16 @@ Level.prototype.playerTouched = function(type, actor) {
       this.finishDelay = 1;
     }
   }
+  else if (type == "snowflake") {  //added
+    gravity = 20;
+
+    setTimeout(function(){
+      gravity = 30;
+    }, 10000);
+   this.actors = this.actors.filter(function(other) {
+  return other != actor;
+});
+}
 };
 
 // Arrow key codes for readibility
